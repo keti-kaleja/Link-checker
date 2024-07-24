@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 
-def check_link_status(urls):
+def check_link_status(url, ):
     results = {}
 
     site_indicators = {
@@ -38,6 +38,8 @@ urls = [
     'https://katfile.com/8md4j7yvel62',
     'https://katfile.com/zbux6b0mta3s',
     'https://katfile.com/ybafbqs6ob3h',
+    'https://katfile.com/aansaylix1kq/',
+    'https://katfile.com/188cnv3mq729',
     'https://turbobit.net/b2v6lmha8pid.html',
     'https://turbobit.net/19mb6ptq15jt.html',
     'https://turbobit.net/818c9qqoesxp.html',
@@ -46,6 +48,7 @@ urls = [
     'https://rapidgator.net/file/78399f029680e279c2829cb36fef8b31/7823_StHaHD.part1.rar.html',
     'https://katfile.com/7vkysaonxahe/Shonen_Jump_2024-01.rar.html',
     'https://katfile.com/b3ur5p9r36xx/JZIOK_0409.rar.html',
+    'https://katfile.com/aansaylix1kg/24-02-24-marca.pdf.html',
     'https://katfile.com/6lc99fpjcxqz/CHYTK_1027.rar.html',
     'https://turbobit.net/pdkqwexip2av.html',
     'https://turbobit.net/szchee5g1i5b/Psycho%20past%20v04.rar.html',
