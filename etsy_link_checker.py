@@ -1,20 +1,33 @@
 from bs4 import BeautifulSoup
 import requests
 
-def check_link_status(url, ):
+def check_link_status(urls):
     results = {}
 
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Referer': 'https://www.google.com/',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Connection': 'keep-alive'
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'DNT': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1'
     }
 
-    site_indicators = {
-        'etsy.com': {'selector': 'button.wt-btn.wt-btn--filled.wt-width-full[type="submit"]', 'text': 'Add to basket'}
+    up_indicators = {
+        'etsy.com': {'selector': 'div.wt-width-full', 'text': 'Add to basket'}
+    }
+
+    down_indicators = {
+        'etsy.com': [
+            {'selector': 'p.wt-text-body-01', 'text': 'Sorry, this item and shop are currently unavailable'},
+            {'selector': 'p.wt-text-body-01', 'text': 'Sorry, this item is unavailable.'}
+        ]
     }
 
     for url in urls:
@@ -23,16 +36,31 @@ def check_link_status(url, ):
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'lxml')
 
-                for domain, config in site_indicators.items():
+                classified = False
+
+                for domain, config in up_indicators.items():
                     if domain in url:
                         indicator = soup.select_one(config['selector'])
-                        if indicator:
-                            if 'text' in config and config['text'] in indicator.text:
-                                results[url] = 'Up'
-                                break
-                        results[url] = 'Down'
+                        if indicator and config['text'] in indicator.text:
+                            results[url] = 'Up'
+                            classified = True
+                            break
+
+                if not classified:
+                    for domain, configs in down_indicators.items():
+                        if domain in url:
+                            for config in configs:
+                                indicator = soup.select_one(config['selector'])
+                                if indicator and config['text'] in indicator.text:
+                                    results[url] = 'Down'
+                                    classified = True
+                                    break
+
+                if not classified:
+                    results[url] = 'Unclassified'
+
             else:
-                results[url] = f'Down (status code: {response.status_code})'
+                results[url] = f'Page does not exist or blocked (status code: {response.status_code})'
         except requests.RequestException as e:
             results[url] = f'Error: {str(e)}'
 
