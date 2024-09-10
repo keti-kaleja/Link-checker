@@ -1,13 +1,19 @@
 from bs4 import BeautifulSoup
 import requests
 
-def check_link_status(url, ):
+def check_link_status(urls):
     results = {}
 
-    site_indicators = {
+    up_indicators = {
         'rapidgator.net': {'selector': 'div.text-block.file-descr', 'text': 'Downloading:'},
-        'katfile.com': {'selector': 'h2', 'text': '.rar'},
+        'katfile.com': {'selector': 'div.panel', 'text': 'Download type:'},
         'turbobit.net': {'selector': 'div.file-header', 'text': 'Download file:'}
+    }
+
+    down_indicators = {
+        'rapidgator.net': {'selector': 'div.main-block', 'text': '404 File not found'},
+        'katfile.com': {'selector': 'img[alt="File has been removed"]', 'attribute': 'alt', 'text': 'File has been removed'},
+        'turbobit.net': {'selector': 'h1', 'text': 'Searching for the file...Please wait…'}
     }
 
     for url in urls:
@@ -16,16 +22,38 @@ def check_link_status(url, ):
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'lxml')
 
-                for domain, config in site_indicators.items():
+                classified = False
+
+                for domain, config in up_indicators.items():
                     if domain in url:
                         indicator = soup.select_one(config['selector'])
-                        if indicator:
-                            if 'text' in config and config['text'] in indicator.text:
-                                results[url] = 'Up'
-                                break
-                        results[url] = 'Down'
+                        if indicator and config['text'] in indicator.text:
+                            results[url] = 'Up'
+                            classified = True
+                            break
+
+                if not classified:
+                    for domain, config in down_indicators.items():
+                        if domain in url:
+                            indicator = soup.select_one(config['selector'])
+                            if indicator:
+                                if config.get('attribute'):
+                                    attribute_value = indicator.get(config['attribute'])
+                                    if attribute_value and config['text'] in attribute_value:
+                                        results[url] = 'Down'
+                                        classified = True
+                                        break
+
+                                elif config['text'] in indicator.text:
+                                    results[url] = 'Down'
+                                    classified = True
+                                    break
+
+                if not classified:
+                    results[url] = 'Unclassified'
+
             else:
-                results[url] = f'Down (status code: {response.status_code})'
+                results[url] = f'Page does not exist or blocked (status code: {response.status_code})'
         except requests.RequestException as e:
             results[url] = f'Error: {str(e)}'
 
@@ -36,6 +64,7 @@ urls = [
     'https://rapidgator.net/file/b2a2da47136afb64127030d747dfdb3b',
     'https://rapidgator.net/file/d91f6be71516f79207103072d3aa4708',
     'https://katfile.com/8md4j7yvel62',
+    'https://katfile.com/aansaylix1kq/',
     'https://katfile.com/zbux6b0mta3s',
     'https://katfile.com/ybafbqs6ob3h',
     'https://katfile.com/aansaylix1kq/',
@@ -54,9 +83,11 @@ urls = [
     'https://turbobit.net/pdkqwexip2av.html',
     'https://turbobit.net/szchee5g1i5b/Psycho%20past%20v04.rar.html',
     'https://turbobit.net/z8qbwchcs7ci.html'
-
 ]
 
+# Run the link status check
 all_products = check_link_status(urls)
+
+# Print the results
 for url, status in all_products.items():
     print(f'{url} is {status}')
